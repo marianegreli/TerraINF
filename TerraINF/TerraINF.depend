@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1676577361 source:c:\users\hackm\documents\github\terrainf\terrainf\main.c
+	"raylib.h"
+
+1676577361 c:\users\hackm\documents\github\terrainf\terrainf\raylib\include\raylib.h
+	<stdarg.h>
+	<stdbool.h>
+
