@@ -39,10 +39,6 @@
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="raylib/include/raudio.h" />
-		<Unit filename="raylib/include/raylib.h" />
-		<Unit filename="raylib/include/raymath.h" />
-		<Unit filename="raylib/include/rlgl.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>
