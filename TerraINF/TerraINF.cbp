@@ -39,8 +39,15 @@
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="raylib_x86-windows/include/raudio.h" />
+		<Unit filename="raylib_x86-windows/include/raylib.h" />
+		<Unit filename="raylib_x86-windows/include/raymath.h" />
+		<Unit filename="raylib_x86-windows/include/rlgl.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
+			<code_completion />
+			<envvars />
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>
