@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1676577361 source:c:\users\hackm\documents\github\terrainf\terrainf\main.c
+1676658324 source:c:\users\hackm\documents\github\terrainf\terrainf\main.c
 	"raylib.h"
 
 1676577361 c:\users\hackm\documents\github\terrainf\terrainf\raylib\include\raylib.h
@@ -8,4 +8,8 @@
 
 1676646699 source:\\homes\mflanegreli\documents\github\terrainf\terrainf\main.c
 	"raylib.h"
+
+1676658064 c:\users\hackm\documents\github\terrainf\terrainf\raylib_x86-windows\include\raylib.h
+	<stdarg.h>
+	<stdbool.h>
 
