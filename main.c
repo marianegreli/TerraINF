@@ -1,327 +1,333 @@
+/*
+ * File:         main.c
+ * Version:      0.1
+ * Authors:      Maria Fernanda Negreli and Pedro Lima
+ * Date Created: 2023-03-07
+ */
+
+// Includes
 #include "raylib.h"
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-#include<time.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
 
-#define LINHAS_MATRIZ_PRINCIPAL 28
-#define COLUNAS_MATRIZ_PRINCIPAL 18
-#define TAMANHO_BORDA 40
+// Defines
+#define GAME_FPS               60
 
-void inicializa_janela(void);
-void ler_item(char*, char);
+#define SCREEN_WIDTH         1200
+#define SCREEN_HEIGHT         800
 
-int score(void);
-int vidas(void);
-int escadas(void);
-int energia(void);
-int fase(void);
+#define LEVEL_MATRIX_ROWS     28
+#define LEVEL_MATRIX_COLUMNS   18
+#define LEVEL_EDGE_SIZE        40
 
-char metais_pesados(int);
-char metais_preciosos(int);
+// Function Prototypes
+void open_window(void);
+//void item_read(char*, char);
 
-int global_contador_semente = 0;
-int global_contador_metal_pesado = 1;
-int global_contador_metal_precioso = 1;
+int player_score(void);
+int player_hp(void);
+int player_ladder(void);
+int player_energy(void);
+int level(void);
 
-float global_posicao_x = TAMANHO_BORDA, global_posicao_y = TAMANHO_BORDA;
+char heavy_ores(int);
+char valuable_ores(int);
 
-Vector2 posicao_personagem = { (float) TAMANHO_BORDA, (float) TAMANHO_BORDA };
+// Global Variables
+int global_seed_counter         = 0;
+int global_heavy_ore_counter    = 1;
+int global_valuable_ore_counter = 1;
+
+float global_x_position = LEVEL_EDGE_SIZE;
+float global_y_position = LEVEL_EDGE_SIZE;
+
+Vector2 player_coordinates = { (float) LEVEL_EDGE_SIZE, (float) LEVEL_EDGE_SIZE };
 
 int main(void)
 {
-    inicializa_janela();
+    open_window();
 
     return 0;
 }
 
-void inicializa_janela(void){
+void open_window(void)
+{
+    // Local Variables
+    int level_matrix[LEVEL_MATRIX_ROWS][LEVEL_MATRIX_COLUMNS];
+    int player_score_counter, player_hp_counter, player_ladder_counter, player_energy_counter, level_counter;
+    int x_pos, y_pos;
+    
+    char item[30], mined_ore = 'S';
 
-    // Largura da tela
-    const int screenWidth = 1200;
+    InitWindow((int) SCREEN_WIDTH, (int) SCREEN_HEIGHT, "Main Window");
 
-    // Altura da tela
-    const int screenHeight = 800;
+    // Sets the game to run at 60 frames per second
+    SetTargetFPS(GAME_FPS);
 
-    InitWindow(screenWidth, screenHeight, "Tela principal");
+    // Loads and converts each image to a texture
+    Image edge = LoadImage("textures/sprites/edge.png");
+    Texture2D texture_edge = LoadTextureFromImage(edge);  
+    UnloadImage(edge);
 
-    // Define o jogo para rodar a 60 quadros por segundo
-    SetTargetFPS(60);
+    Image dark_ground = LoadImage("textures/sprites/ground_background.png");
+    Texture2D texture_dark_ground = LoadTextureFromImage(dark_ground);  
+    UnloadImage(dark_ground);
 
-    // Converte imagem para textura
-    Image borda = LoadImage("resources/imagens/borda.png");
-    Texture2D textura_borda = LoadTextureFromImage(borda);  
-    UnloadImage(borda);
+    Image light_ground = LoadImage("textures/sprites/ground.png");
+    Texture2D texture_light_ground = LoadTextureFromImage(light_ground);  
+    UnloadImage(light_ground);
 
-    Image terra_escura = LoadImage("resources/imagens/fundo_terra.png");
-    Texture2D textura_terra_escura = LoadTextureFromImage(terra_escura);  
-    UnloadImage(terra_escura);
+    Image ore = LoadImage("textures/sprites/ore.png");
+    Texture2D texture_ore = LoadTextureFromImage(ore);  
+    UnloadImage(ore);
 
-    Image terra_clara = LoadImage("resources/imagens/terra.png");
-    Texture2D textura_terra_clara = LoadTextureFromImage(terra_clara);  
-    UnloadImage(terra_clara);
+    Image player = LoadImage("textures/sprites/player.png");
+    Texture2D texture_player = LoadTextureFromImage(player);  
+    UnloadImage(player);
 
-    Image minerio = LoadImage("resources/imagens/minerio.png");
-    Texture2D textura_minerio = LoadTextureFromImage(minerio);  
-    UnloadImage(minerio);
-
-    Image personagem = LoadImage("resources/imagens/jogador.png");
-    Texture2D textura_personagem = LoadTextureFromImage(personagem);  
-    UnloadImage(personagem);
-
-    // Detectar botão de fechar janela ou tecla ESC
+    // Checks if KEY_ESCAPE pressed or Close icon aren't pressed
     while (!WindowShouldClose())
     {
+        int row, column;
+        int rand_number;
 
-    int matriz_principal[LINHAS_MATRIZ_PRINCIPAL][COLUNAS_MATRIZ_PRINCIPAL];
-    int contador_pontuacao, contador_vidas, contador_escadas, contador_energia, contador_fase;
-    int posX, posY;
-    
+        player_score_counter = player_score();
+        player_hp_counter = player_hp();
+        player_ladder_counter = player_ladder();
+        player_energy_counter = player_energy();
+        level_counter = level();
 
-    char item[30], minerio_escavado = 'S';
+        //item_read(item, mined_ore);
 
-    contador_pontuacao = score();
-    contador_vidas = vidas();
-    contador_escadas = escadas();
-    contador_energia = energia();
-    contador_fase = fase();
+        // Draws the window
+        BeginDrawing();
 
+        // Clears window's background
+        ClearBackground(RAYWHITE);
 
-
-    ler_item(item, minerio_escavado);
-
-    // Desenha a janela
-    BeginDrawing();
-
-    // Limpa a tela
-    ClearBackground(RAYWHITE);
-
-    // DEFINE O CABEÇALHO DA TELA PRINCIPAL
-    DrawRectangle(0, 0, screenWidth, 40, BLACK);
-        DrawText(TextFormat("SCORE: %d", contador_pontuacao), 40, 10, 20, GRAY);
-        DrawText(TextFormat("VIDAS: %d", contador_vidas), 200, 10, 20, GREEN);
-        DrawText(TextFormat("ENERGIA: %d", contador_energia), 370, 10, 20, YELLOW);
-        DrawText(TextFormat("ESCADAS: %d", contador_escadas), 570, 10, 20, MAROON);
-        DrawText(TextFormat("FASE: %d", contador_fase), 780, 10, 20, BLUE);
-        DrawText(TextFormat("ITEM: %s", item), 920, 10, 20, PURPLE);
+        // Defines window's header
+        DrawRectangle(0, 0, SCREEN_WIDTH, 40, BLACK);
+        DrawText(TextFormat("SCORE: %d", player_score_counter), 40, 10, 20, GRAY);
+        DrawText(TextFormat("HEALTH POINTS: %d", player_hp_counter), 200, 10, 20, GREEN);
+        DrawText(TextFormat("ENERGY: %d", player_energy_counter), 420, 10, 20, YELLOW);
+        DrawText(TextFormat("LADDERS: %d", player_ladder_counter), 620, 10, 20, MAROON);
+        DrawText(TextFormat("LEVEL: %d", level_counter), 830, 10, 20, BLUE);
+        DrawText(TextFormat("ITEM: %s", item), 970, 10, 20, PURPLE);
 
 
-    // PREENCHE BORDAS DA TELA
-        for(posX = TAMANHO_BORDA; posX < screenWidth - TAMANHO_BORDA; posX = posX + TAMANHO_BORDA){
-            // EMBAIXO
-                DrawTexture(textura_borda, posX, screenHeight - TAMANHO_BORDA, WHITE);
+        // Fills the window's edges
+        for(x_pos = LEVEL_EDGE_SIZE; x_pos < SCREEN_WIDTH - LEVEL_EDGE_SIZE; x_pos = x_pos + LEVEL_EDGE_SIZE)
+        {
+            // Below
+            DrawTexture(texture_edge, x_pos, SCREEN_HEIGHT - LEVEL_EDGE_SIZE, WHITE);
         }
 
-        for(posY = TAMANHO_BORDA; posY < screenHeight; posY = posY + TAMANHO_BORDA){
-            // LATERAL ESQUERDA
-                DrawTexture(textura_borda, 0, posY, WHITE);
-            //LATERAL DIREITA
-                DrawTexture(textura_borda, screenWidth - TAMANHO_BORDA, posY, WHITE);
+        for(y_pos = LEVEL_EDGE_SIZE; y_pos < SCREEN_HEIGHT; y_pos = y_pos + LEVEL_EDGE_SIZE){
+            // Left side
+            DrawTexture(texture_edge, 0, y_pos, WHITE);
+            // Right side
+            DrawTexture(texture_edge, SCREEN_WIDTH - LEVEL_EDGE_SIZE, y_pos, WHITE);
         }
 
-    // DEFINE AS BORDAS E CABEÇALHO COMO INACESSÍVEIS AO PERSONAGEM (tá com problema aqui)
-    int linha, coluna;
-
-        for(coluna = 0; coluna < COLUNAS_MATRIZ_PRINCIPAL; coluna++){
-            matriz_principal[0][coluna] = 1;
+        // Defines the edges and header as inaccessible to the player (NOT WORKING)
+        for(column = 0; column < LEVEL_MATRIX_COLUMNS; column++)
+        {
+            level_matrix[0][column] = 1;
         }
-        for(linha = 0; linha < LINHAS_MATRIZ_PRINCIPAL; linha++){
-            matriz_principal[linha][0] = 1;
+        for(row = 0; row < LEVEL_MATRIX_ROWS; row++)
+        {
+            level_matrix[row][0] = 1;
         }
 
-
-
-    // PREENCHE AS DUAS PRIMEIRAS LINHAS DA MATRIZ COM ESPAÇO VAZIO (TERRA ESCURA)
-    
-    for(linha = 0; linha < LINHAS_MATRIZ_PRINCIPAL; linha++){
-        for(coluna = 0; coluna < 2; coluna++){
-            matriz_principal[linha][coluna] = 0;
-            DrawTexture(textura_terra_escura, TAMANHO_BORDA + linha*TAMANHO_BORDA, TAMANHO_BORDA + coluna*TAMANHO_BORDA, WHITE);
-        }
-    }
-
-    // PREENCHE O RESTANTE DA MATRIZ COM GERAÇÃO ALEATÓRIA DE ESPAÇOS
-        // Garanto que 2/3 dela esteja ocupada com "1s" e 1/3 com "0s"
-        // Notação: "0s" virarão espaços disponíveis para o personagem (terra escura) e "1s" terão pedras/terra
-
-    srand(global_contador_semente); // se passar de nível, contador incrementa
-
-    int aleatorio;
-    
-    for(linha = 0; linha < LINHAS_MATRIZ_PRINCIPAL; linha++){
-        for(coluna = 2; coluna < COLUNAS_MATRIZ_PRINCIPAL; coluna++){
-            aleatorio = (rand() % ((1)+1));
-            matriz_principal[linha][coluna] = aleatorio;
-
-            if(matriz_principal[linha][coluna] == 0){
-                aleatorio = (rand() % ((1)+1));
-                matriz_principal[linha][coluna] = aleatorio;
+        // Fills the two first level matrix' rows with a dark ground
+        for(row = 0; row < LEVEL_MATRIX_ROWS; row++)
+        {
+            for(column = 0; column < 2; column++)
+            {
+                level_matrix[row][column] = 0;
+                DrawTexture(texture_dark_ground, LEVEL_EDGE_SIZE + row*LEVEL_EDGE_SIZE, LEVEL_EDGE_SIZE + column*LEVEL_EDGE_SIZE, WHITE);
             }
-            
         }
-    }
 
-    for(linha = 0; linha < LINHAS_MATRIZ_PRINCIPAL; linha++){
-        for(coluna = 2; coluna < COLUNAS_MATRIZ_PRINCIPAL; coluna++){
-            if(matriz_principal[linha][coluna] == 0){
-                    // PREENCHE ZEROS COM TERRA ESCURA
-                    DrawTexture(textura_terra_escura, TAMANHO_BORDA + linha*TAMANHO_BORDA, TAMANHO_BORDA + coluna*TAMANHO_BORDA, WHITE);
+        /* 
+         * Fills the rest of the level matrix with random numbers
+         * 
+         * It guarantees that 2/3 of it will be filled with "1s" and 1/3 with "0s"
+         * 
+         * Note: "0s" are free spaces for the player (dark ground) e "1s" will have cobble/ground
+         */ 
+
+        srand(global_seed_counter); // After clearing a level, the counter gets incremented
+    
+        for(row = 0; row < LEVEL_MATRIX_ROWS; row++)
+        {
+            for(column = 2; column < LEVEL_MATRIX_COLUMNS; column++)
+            {
+                rand_number = (rand() % ((1)+1));
+                level_matrix[row][column] = rand_number;
+
+                if(level_matrix[row][column] == 0)
+                {
+                    rand_number = (rand() % ((1)+1));
+                    level_matrix[row][column] = rand_number;
                 }
-            else{
-                //DO ESPAÇO DISPONÍVEL COM UNS:
-                    aleatorio = (rand() % (10));
-                    //PREENCHE 80% COM TERRA CLARA
-                    if(aleatorio >= 0 && aleatorio < 8){
-                        DrawTexture(textura_terra_clara, TAMANHO_BORDA + linha*TAMANHO_BORDA, TAMANHO_BORDA + coluna*TAMANHO_BORDA, WHITE);
-                    }
-                    else if(aleatorio == 8){
-                        //PREENCHE 10% COM METAIS PRECIOSOS
-                        DrawTexture(textura_minerio, TAMANHO_BORDA + linha*TAMANHO_BORDA, TAMANHO_BORDA + coluna*TAMANHO_BORDA, WHITE);
-                        // DEFINE A DISTRIBUIÇÃO DE PRATA, OURO E TITÂNIO
-                        matriz_principal[linha][coluna] = metais_pesados(global_contador_metal_precioso);
-                    }
-                    else if(aleatorio == 9){
-                        //PREENCHE 10% COM METAIS PESADOS
-                        DrawTexture(textura_minerio, TAMANHO_BORDA + linha*TAMANHO_BORDA, TAMANHO_BORDA + coluna*TAMANHO_BORDA, WHITE);
-                        // DEFINE 50% PARA URÂNIO E 50% PARA TITÂNIO
-                        matriz_principal[linha][coluna] = metais_pesados(global_contador_metal_pesado);
-                    }
             }
         }
-    }
 
-    // DEFINO QUE O PERSONAGEM COMEÇA SEMPRE NO X = 0 E Y = 0
-    DrawTextureV(textura_personagem, posicao_personagem, WHITE);
+        for(row = 0; row < LEVEL_MATRIX_ROWS; row++)
+        {
+            for(column = 2; column < LEVEL_MATRIX_COLUMNS; column++)
+            {
+                // Fills "0s" with dark ground
+                if(level_matrix[row][column] == 0)
+                    DrawTexture(texture_dark_ground, LEVEL_EDGE_SIZE + row*LEVEL_EDGE_SIZE, LEVEL_EDGE_SIZE + column*LEVEL_EDGE_SIZE, WHITE);
+                else
+                {
+                    // Related to the player's free space (1s):
+                    rand_number = (rand() % (10));
 
+                    // 80 % is light ground
+                    if(rand_number >= 0 && rand_number < 8)
+                        DrawTexture(texture_light_ground, LEVEL_EDGE_SIZE + row*LEVEL_EDGE_SIZE, LEVEL_EDGE_SIZE + column*LEVEL_EDGE_SIZE, WHITE);
+                    else if(rand_number == 8)
+                    {
+                        // 10 % is valuable ores
+                        DrawTexture(texture_ore, LEVEL_EDGE_SIZE + row*LEVEL_EDGE_SIZE, LEVEL_EDGE_SIZE + column*LEVEL_EDGE_SIZE, WHITE);
 
-    // DEFINE O MOVIMENTO DO PERSONAGEM
-
-    if (IsKeyDown(KEY_RIGHT)){
-        if((matriz_principal[(int)((posicao_personagem.x + 0.2)/TAMANHO_BORDA)][(int)(posicao_personagem.y/TAMANHO_BORDA)]) == 0){
-            posicao_personagem.x += 4.0f;
+                        // Defines the distribution of silver, gold and titanium
+                        level_matrix[row][column] = heavy_ores(global_valuable_ore_counter);
+                    }
+                    else if(rand_number == 9){
+                        // 10 % is heavy ores
+                        DrawTexture(texture_ore, LEVEL_EDGE_SIZE + row*LEVEL_EDGE_SIZE, LEVEL_EDGE_SIZE + column*LEVEL_EDGE_SIZE, WHITE);
+                        // Defines 50% uranium and 50 % titanium
+                        level_matrix[row][column] = heavy_ores(global_heavy_ore_counter);
+                    }
+                }
+            }
         }
-    }
-    if (IsKeyDown(KEY_LEFT)){
-        if((matriz_principal[(int)((posicao_personagem.x  - 0.6)/TAMANHO_BORDA)][(int)((posicao_personagem.y)/TAMANHO_BORDA)]) == 0){
-            posicao_personagem.x -= 4.0f;
-        }
-    }
-    if (IsKeyDown(KEY_UP)){
-        if((matriz_principal[(int)(posicao_personagem.x/TAMANHO_BORDA)][(int)((posicao_personagem.y - 0.6)/TAMANHO_BORDA)]) == 0){
-            //if(posicao_personagem.x && posicao_personagem.y)
-        //} && contador_escadas > 0){
-            posicao_personagem.y -= 4.0f;
-        }
-        /*else{
-            DrawRectangle(screenWidth/2 - 200, screenHeight/2 - 100, 400, 200, RAYWHITE);
-                DrawText(TextFormat("VOCE NAO TEM ESCADAS\nDISPONIVEIS!"), screenWidth/2 - 200, screenHeight/2 - 50, 25, BLACK);
-        }*/
-    }
-    if (IsKeyDown(KEY_DOWN)){
-        if((matriz_principal[(int)(posicao_personagem.x/TAMANHO_BORDA)][(int)((posicao_personagem.y  + 0.2)/TAMANHO_BORDA)]) == 0){
-            posicao_personagem.y += 4.0f;
-        }
+
+        // Defines that the player always starts at coordinates (0,0)
+        DrawTextureV(texture_player, player_coordinates, WHITE);
+
+
+        // Defines player's moviment
+        if (IsKeyDown(KEY_RIGHT))
+            if((level_matrix[(int)((player_coordinates.x + 0.2)/LEVEL_EDGE_SIZE)][(int)(player_coordinates.y/LEVEL_EDGE_SIZE)]) == 0)
+                player_coordinates.x += 4.0f;
+        if (IsKeyDown(KEY_LEFT))
+            if((level_matrix[(int)((player_coordinates.x  - 0.6)/LEVEL_EDGE_SIZE)][(int)((player_coordinates.y)/LEVEL_EDGE_SIZE)]) == 0)
+                player_coordinates.x -= 4.0f;
+        if (IsKeyDown(KEY_UP))
+            if((level_matrix[(int)(player_coordinates.x/LEVEL_EDGE_SIZE)][(int)((player_coordinates.y - 0.6)/LEVEL_EDGE_SIZE)]) == 0)
+                player_coordinates.y -= 4.0f;
+        if (IsKeyDown(KEY_DOWN))
+            if((level_matrix[(int)(player_coordinates.x/LEVEL_EDGE_SIZE)][(int)((player_coordinates.y  + 0.2)/LEVEL_EDGE_SIZE)]) == 0)
+                player_coordinates.y += 4.0f;
+        
+        EndDrawing();
     }
 
-    EndDrawing();
-    }
+    // Unloads all textures
+    UnloadTexture(texture_edge);
+    UnloadTexture(texture_dark_ground); 
+    UnloadTexture(texture_light_ground); 
+    UnloadTexture(texture_ore); 
+    UnloadTexture(texture_player); 
 
-    // Desabilita as texturas
-    UnloadTexture(textura_borda);
-    UnloadTexture(textura_terra_escura); 
-    UnloadTexture(textura_terra_clara); 
-    UnloadTexture(textura_minerio); 
-    UnloadTexture(textura_personagem); 
-
-    // Fecha a janela
+    // Closes the window
     CloseWindow();
 }
 
-char metais_pesados(int contador){
+char heavy_ores(int counter)
+{
 
-    //Define que a cada chamada de função altera-se de césio para urânio o metal pesado colocado na matriz
-
-    if(contador == 1){
+    // Defines that at each function call, changes from cesium to uranium the heavy ore passed to this function
+    if(counter == 1)
+    {
         return 'C';
-        contador = 0;
+        counter = 0;
     }
-    else{
+    else
+    {
         return 'U';
-        contador = 1;
+        counter = 1;
     }
 }
 
-char metais_preciosos(int contador){
+char valuable_ores(int counter){
 
-    //Define que a cada chamada de função altera-se de prata para ouro e titânio o metal precioso colocado na matriz
+    // Defines that at each function call, changes from silver to gold, to titanium the valuable ore passed to this function
 
-    if(contador == 1){
+    if(counter == 1){
         return 'S';
-        contador = 2;
+        counter = 2;
     }
-    else if(contador == 2){
+    else if(counter == 2){
         return 'G';
-        contador = 0;
+        counter = 0;
     }
     else{
         return 'T';
-        contador = 1;
+        counter = 1;
     }
 }
 
 
-int score(void){
+int player_score(void){
 
-    //retorna a pontuação
-    int score = 000;
+    // Returns score
+    int player_score = 000;
 
-    if(score == 1000){
-        //PULA DE NÍVEL
-            //ATUALIZO A SEMENTE
-            global_contador_semente++;
+    if(player_score == 1000){
+        // Levels-up means updating the level seed
+            global_seed_counter++;
     }
 
-    return score;
+    return player_score;
 }
 
-int vidas(void){
+int player_hp(void){
 
-    //retorna a quantidade de vidas restantes
-    int contador_vidas = 3;
+    // Retorns player's remaining health points
+    int player_hp_counter = 3;
 
-    return contador_vidas;
+    return player_hp_counter;
 }
 
-int escadas(void){
+int player_ladder(void){
 
-    //retorna a quantidade de escadas restantes
-    int escadas = 10;
+    // Returns player's remaining ladders
+    int player_ladder = 10;
 
-    return escadas;
+    return player_ladder;
 }
 
-int energia(void){
+int player_energy(void){
 
-    //retorna a quantidade de energia restantes
-    int energia = 50;
+    // Returns player's remaining energy
+    int player_energy = 50;
 
-    return energia;
+    return player_energy;
 }
 
-int fase(void){
+int level(void){
 
-    //retorna a fase
-    int fase = 1;
+    // Returns level
+    int level = 1;
 
-    return fase;
+    return level;
 }
 
-void ler_item(char * item, char minerio_escavado){
+/*
+void item_read(char * item, char mined_ore){
 
     char * intermediario = item;
 
-    //retorna o utlimo item
-    switch(minerio_escavado){
+    // Returns last item
+    switch(mined_ore){
         case 'G':
         {
             intermediario = 'OURO';
@@ -352,4 +358,4 @@ void ler_item(char * item, char minerio_escavado){
             intermediario = 'VAZIO';
         }
     }
-}
+}*/
