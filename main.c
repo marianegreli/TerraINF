@@ -7,10 +7,14 @@
 #define LINHAS_MATRIZ_PRINCIPAL 28
 #define COLUNAS_MATRIZ_PRINCIPAL 18
 #define TAMANHO_BORDA 40
+#define NUM_PROCESSOS_MENU 3
 
 void inicializa_janela(void);
-void ler_item(char*, char);
+void sair(void);
+void ranking(void);
+//void ler_item(char*, char);
 
+int menu(void);
 int score(void);
 int vidas(void);
 int escadas(void);
@@ -28,19 +32,159 @@ float global_posicao_x = TAMANHO_BORDA, global_posicao_y = TAMANHO_BORDA;
 
 Vector2 posicao_personagem = { (float) TAMANHO_BORDA, (float) TAMANHO_BORDA };
 
+typedef enum {
+    INICIA_JOGO,
+    RANKING,
+    SAIR
+} Menu;
+
+static const char *enunciados_menu[] = {
+    "-> NOVO JOGO <-",
+    "RANKING DE PONTOS",
+    "SAIR"
+};
+
 int main(void)
 {
-    inicializa_janela();
+    int flag_entra_jogo;
 
-    return 0;
+    flag_entra_jogo = menu();
+
+    if(flag_entra_jogo == 1){
+        inicializa_janela();
+    }
+    else if(flag_entra_jogo == 2){
+       ranking();
+    }
+    else if(flag_entra_jogo == 0){
+        return 0;
+    }
+    
+}
+
+int menu(void)
+{
+    // Configurações da tela:
+    const int screenWidth = 1200;
+    const int screenHeight = 800;
+
+    // Inicialização de variaveis
+    int flag = 4; //Bandeira de retorno
+    int grava_foco_mouse = -1;
+    int iterador_processos = 0;
+    bool booleano_textura_capa = false;
+    Rectangle alterna_gravacao_focos_mouse[NUM_PROCESSOS_MENU] = { 0 };
+
+    InitWindow(screenWidth, screenHeight, "Menu");
+
+    // Converte imagem para textura
+        Image capa_original = LoadImage("resources/imagens/capa.png"); 
+
+        // Converte imagem para 32 bit (necessario para usar como textura) 
+        ImageFormat(&capa_original, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);        
+        Texture2D textura_capa = LoadTextureFromImage(capa_original);    
+
+    Image capa_copia = ImageCopy(capa_original);
+
+    for (int i = 0; i < NUM_PROCESSOS_MENU; i++)  alterna_gravacao_focos_mouse[i] = (Rectangle){ (float)(screenWidth/2-150.0/2), (float)(screenHeight/2 + 32*i), 150.0f, 30.0f };
+
+    // Define o jogo para rodar a 60 quadros por segundo
+    SetTargetFPS(60);
+   
+    while (!WindowShouldClose() && flag == 4)    
+    {
+        
+        for (int i = 0; i < NUM_PROCESSOS_MENU; i++)
+        {
+            if (CheckCollisionPointRec(GetMousePosition(),  alterna_gravacao_focos_mouse[i]))
+            {
+                grava_foco_mouse = i;
+
+                if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+                {
+                    iterador_processos = i;
+                    booleano_textura_capa = true;
+                }
+                break;
+            }
+            else grava_foco_mouse = -1;
+        }
+
+        // Verifica o mouse
+        if (IsKeyPressed(KEY_DOWN))
+        {
+            iterador_processos++;
+            if (iterador_processos > (NUM_PROCESSOS_MENU - 1)) iterador_processos = 0;
+            booleano_textura_capa = true;
+        }
+        else if (IsKeyPressed(KEY_UP))
+        {
+            iterador_processos--;
+            if (iterador_processos < 0) iterador_processos = 7;
+            booleano_textura_capa = true;
+        }
+
+        // Recarrega a textura da capa
+        if (booleano_textura_capa)
+        {
+            UnloadImage(capa_copia);                
+            capa_copia = ImageCopy(capa_original);     
+
+            switch (iterador_processos)
+            {
+                case INICIA_JOGO: {
+                    flag = 1; 
+                    break;
+                }
+                case RANKING: {
+                    flag = 2; 
+                    break;
+                }
+                case SAIR: {
+                    flag = 0; 
+                    return flag;  
+                    break;
+                }
+                
+                default: 
+                    break;
+            }
+
+            Color *pixels = LoadImageColors(capa_copia);    
+            UpdateTexture(textura_capa, pixels);             
+            UnloadImageColors(pixels);                  
+
+            booleano_textura_capa = false;
+        }
+      
+        BeginDrawing();
+
+            DrawTexture(textura_capa, screenWidth - textura_capa.width, screenHeight/2 - textura_capa.height/2, WHITE);
+
+            // Desenha retangulos, nao botoes!!!!!!
+            for (int i = 0; i < NUM_PROCESSOS_MENU; i++)
+            {
+                DrawRectangleLines((int) alterna_gravacao_focos_mouse[i].x, (int)  alterna_gravacao_focos_mouse[i].y, (int)  alterna_gravacao_focos_mouse[i].width, (int)  alterna_gravacao_focos_mouse[i].height, ((i == iterador_processos) || (i == grava_foco_mouse)) ? RAYWHITE : BLACK); // define a cor da janela quando selecionada (primeira) e quando nao selecionada
+                DrawText( enunciados_menu[i], (int)(  alterna_gravacao_focos_mouse[i].x +  alterna_gravacao_focos_mouse[i].width/2 - MeasureText(enunciados_menu[i], 10)/2), (int)  alterna_gravacao_focos_mouse[i].y + 11, 10, ((i == iterador_processos) || (i == grava_foco_mouse)) ? GREEN : MAROON); // define a cor do texto quando selecionado e nao selecionado
+            }
+
+        EndDrawing();
+    }
+
+    //Desabilita as texturas e imagens
+    UnloadTexture(textura_capa);      
+    UnloadImage(capa_original);        
+    UnloadImage(capa_copia);          
+
+    CloseWindow();               
+
+    return flag;
 }
 
 void inicializa_janela(void){
 
-    // Largura da tela
+    // Configurações da tela
     const int screenWidth = 1200;
-
-    // Altura da tela
     const int screenHeight = 800;
 
     InitWindow(screenWidth, screenHeight, "Tela principal");
@@ -78,7 +222,8 @@ void inicializa_janela(void){
     int posX, posY;
     
 
-    char item[30], minerio_escavado = 'S';
+    char item[30];
+    //char minerio_escavado = 'S';
 
     contador_pontuacao = score();
     contador_vidas = vidas();
@@ -87,8 +232,7 @@ void inicializa_janela(void){
     contador_fase = fase();
 
 
-
-    ler_item(item, minerio_escavado);
+    //ler_item(item, minerio_escavado);
 
     // Desenha a janela
     BeginDrawing();
@@ -316,7 +460,24 @@ int fase(void){
     return fase;
 }
 
-void ler_item(char * item, char minerio_escavado){
+void ranking(void){
+
+    const int screenWidth = 1200;
+    const int screenHeight = 800;
+
+    InitWindow(screenWidth, screenHeight, "Ranking");
+
+    while (!WindowShouldClose())
+    {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+    EndDrawing();
+    }
+
+    CloseWindow();
+}
+
+/* void ler_item(char * item, char minerio_escavado){
 
     char * intermediario = item;
 
@@ -353,3 +514,4 @@ void ler_item(char * item, char minerio_escavado){
         }
     }
 }
+*/
